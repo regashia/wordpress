@@ -1,0 +1,43 @@
+version: '2'
+services:
+  db:
+    container_name: wordpress-db
+    image: mysql:5.7
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+    volumes:
+      - wordpress-db:/var/lib/mysql
+  wordpress:
+    container_name: wordpress
+    image: wordpress:latest
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: ''
+      VIRTUAL_HOST: ${URL}
+      LETSENCRYPT_HOST: ${URL}
+      LETSENCRYPT_EMAIL: regashia@gmail.com
+    volumes:
+      - ../html:/var/www/html
+    depends_on:
+      - db
+  nginx-proxy:
+    container_name: wordpress-nginx-proxy
+    image: jwilder/nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/nginx/vhost.d
+      - /usr/share/nginx/html
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - /etc/nginx/certs
+  letsencrypt-nginx-proxy-companion:
+    container_name: wordpress-letsencrypt-nginx-proxy-companion
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    volumes_from:
+      - nginx-proxy
+volumes:
+  wordpress-db:
